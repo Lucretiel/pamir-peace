@@ -1,42 +1,21 @@
-use crate::Coalition;
+use enum_map::EnumMap;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+use crate::primitives::Coalition;
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct BlockSet {
-    pub british: i8,
-    pub russian: i8,
-    pub afghan: i8,
+    pub blocks: EnumMap<Coalition, i8>,
 }
 
 impl BlockSet {
     pub fn empty() -> Self {
-        Self {
-            british: 0,
-            russian: 0,
-            afghan: 0,
-        }
+        Self::default()
     }
 
     pub fn new_tray() -> Self {
         Self {
-            british: 12,
-            russian: 12,
-            afghan: 12,
-        }
-    }
-
-    pub fn get(&self, coalition: Coalition) -> i8 {
-        match coalition {
-            Coalition::Britain => self.british,
-            Coalition::Russia => self.russian,
-            Coalition::Afghanistan => self.afghan,
-        }
-    }
-
-    pub fn get_mut(&mut self, coalition: Coalition) -> &mut i8 {
-        match coalition {
-            Coalition::Britain => &mut self.british,
-            Coalition::Russia => &mut self.russian,
-            Coalition::Afghanistan => &mut self.afghan,
+            blocks: EnumMap::from_array(brownstone::build_cloned(12)),
         }
     }
 }

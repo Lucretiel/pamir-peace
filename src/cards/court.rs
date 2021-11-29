@@ -2,21 +2,30 @@ use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Coalition, Region, Suit};
+use crate::{
+    map::Region,
+    primitives::{Coalition, Suit},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Rank {
-    One,
-    Two,
-    Three,
+    One = 1,
+    Two = 2,
+    Three = 3,
+}
+
+impl Rank {
+    pub fn value(&self) -> i8 {
+        *self as i8
+    }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Impact {
-    pub armies: u8,
-    pub roads: u8,
-    pub spies: u8,
-    pub tribes: u8,
+    pub armies: i8,
+    pub roads: i8,
+    pub spies: i8,
+    pub tribes: i8,
     pub leverage: bool,
     pub favor: Option<Suit>,
 }
@@ -60,13 +69,12 @@ impl ActionSet {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CardData {
-    pub id: u8,
     pub name: &'static str,
     pub rank: Rank,
     pub suit: Suit,
     pub region: Region,
     pub patriot: Option<Coalition>,
-    pub price: Option<Coalition>,
+    pub prize: Option<Coalition>,
     pub impact: Impact,
     pub actions: ActionSet,
     pub ability: Option<SpecialAbility>,
@@ -87,7 +95,7 @@ pub enum SpecialAbility {}
 
 #[derive(Debug)]
 pub struct Card {
-    data: &'static CardData,
+    pub(super) data: &'static CardData,
 }
 
 impl Deref for Card {

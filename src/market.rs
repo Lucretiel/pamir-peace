@@ -1,4 +1,4 @@
-use std::mem;
+use std::{mem, ops::Deref};
 
 use itertools::{Itertools, Position};
 
@@ -43,13 +43,9 @@ impl MarketCard {
     pub fn new(card: Card) -> Self {
         Self {
             card,
-            rupees: RupeeSet::new(),
+            rupees: RupeeSet::empty(),
             mark: false,
         }
-    }
-
-    pub fn card(&self) -> &Card {
-        &self.card
     }
 
     pub fn into_parts(self) -> (Card, RupeeSet) {
@@ -63,6 +59,14 @@ impl MarketCard {
             self.mark = true;
             self.rupees.add(rupees);
         }
+    }
+}
+
+impl Deref for MarketCard {
+    type Target = Card;
+
+    fn deref(&self) -> &Self::Target {
+        &self.card
     }
 }
 
@@ -88,9 +92,7 @@ impl MarketRow {
     /// Shift all cards to the left, then fill the remaining slots with cards
     /// from some source, until the row is full or the source runs out
     pub fn fill_from(&mut self, cards: &mut impl Iterator<Item = Card>) {
-        let existing_cards = mem::take(&mut self.cards)
-            .into_iter()
-            .filter_map(|slot| slot);
+        let existing_cards = mem::take(&mut self.cards).into_iter().flatten();
 
         let new_cards = cards.map(MarketCard::new);
         let cards = existing_cards.chain(new_cards);
@@ -103,8 +105,8 @@ impl MarketRow {
 
     /// Attempt to pay the cost of an ability. Rupees are placed one at a time
     /// from back to front. Any excess rupees are all piled onto the first card.
-    /// Returns an error, returning the set, if there are *no* cards in this row.
-    pub fn spend_for_ability(&mut self, mut payment: RupeeSet) -> Result<(), RupeeSet> {
+    /// If there are *no* cards, the rupees are simply lost.
+    pub fn spend_for_ability(&mut self, mut payment: RupeeSet) {
         for slot in self
             .cards
             .iter_mut()
@@ -113,15 +115,16 @@ impl MarketRow {
             .with_position()
         {
             match slot {
-                Position::Last(card) | Position::Only(card) => card.rupees.add(payment.take_all()),
+                Position::Last(card) | Position::Only(card) => {
+                    card.rupees.add(payment);
+                    return;
+                }
                 Position::First(card) | Position::Middle(card) => match payment.take_one() {
-                    None => return Ok(()),
+                    None => return,
                     Some(rupee) => card.rupees.add(rupee),
                 },
             }
         }
-
-        payment.done()
     }
 
     /// Take a card without spending any money

@@ -1,33 +1,28 @@
-use std::{
-    fmt::{self, Debug, Formatter},
-    mem,
-};
+use std::mem;
 
 /// A single rupee, can be taken from or added to sets
-pub struct Rupee {
-    _private: (),
-}
-
-impl Debug for Rupee {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str("Rupee")
-    }
-}
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Rupee;
 
 /// A set of rupees
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct RupeeSet {
-    count: u8,
+    count: i8,
 }
 
 impl RupeeSet {
     /// Create a new, empty set of rupees
-    pub fn new() -> Self {
-        Self { count: 0 }
+    pub fn empty() -> Self {
+        Self::new(0)
+    }
+
+    /// Create a new set of rupees.
+    pub fn new(count: i8) -> Self {
+        Self { count }
     }
 
     /// Get the number of rupees in this set
-    pub fn count(&self) -> u8 {
+    pub fn count(&self) -> i8 {
         self.count
     }
 
@@ -37,7 +32,7 @@ impl RupeeSet {
     }
 
     /// Take up to count rupees out of the bag
-    pub fn take_up_to(&mut self, count: u8) -> RupeeSet {
+    pub fn take_up_to(&mut self, count: i8) -> RupeeSet {
         if count >= self.count {
             self.take_all()
         } else {
@@ -48,25 +43,23 @@ impl RupeeSet {
 
     /// Try to take `count` rupees out of the bag. If count is too high,
     /// returns `None`, and `self` is unaffected
-    pub fn take_exactly(&mut self, count: u8) -> Option<RupeeSet> {
-        let remaining = self.count.checked_sub(count)?;
-        self.count = remaining;
-        Some(RupeeSet { count })
+    pub fn take_exactly(&mut self, count: i8) -> Option<RupeeSet> {
+        if count > self.count {
+            None
+        } else {
+            self.count -= count;
+            Some(RupeeSet { count })
+        }
     }
 
     /// Try to take a single rupee out of this bag
     pub fn take_one(&mut self) -> Option<Rupee> {
-        self.take_exactly(1).map(|_set| Rupee { _private: () })
+        self.take_exactly(1).map(|_set| Rupee)
     }
 
     /// Take all the rupees out of this bag
     pub fn take_all(&mut self) -> RupeeSet {
         mem::take(self)
-    }
-
-    /// Try to dissolve this `RupeeSet`. Returns an error if the set is not empty.
-    pub fn done(self) -> Result<(), RupeeSet> {
-        (self.count() == 0).then(|| ()).ok_or(self)
     }
 }
 
@@ -83,29 +76,5 @@ impl IntoRupeeSet for Rupee {
 impl IntoRupeeSet for RupeeSet {
     fn into_set(self) -> RupeeSet {
         self
-    }
-}
-
-/// An infinite source of rupees. There should only be one of these per game.
-#[derive(Debug, Default)]
-pub struct RupeeBag {
-    _private: (),
-}
-
-impl RupeeBag {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn take_one(&mut self) -> Rupee {
-        Rupee { _private: () }
-    }
-
-    pub fn take(&mut self, count: u8) -> RupeeSet {
-        RupeeSet { count }
-    }
-
-    pub fn add(&mut self, rupees: impl IntoRupeeSet) {
-        rupees.into_set();
     }
 }
