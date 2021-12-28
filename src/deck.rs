@@ -1,6 +1,5 @@
 use std::iter;
 
-use arrayvec::ArrayVec;
 use itertools::Itertools;
 use rand::{prelude::SliceRandom, Rng};
 

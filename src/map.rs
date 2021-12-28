@@ -65,14 +65,14 @@ impl Border {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct RegionOccupants {
-    pub armies: BlockSet,
-    pub tribes: CylinderSet,
+struct RegionOccupants {
+    armies: BlockSet,
+    tribes: CylinderSet,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct BorderOccupants {
-    pub roads: BlockSet,
+struct BorderOccupants {
+    roads: BlockSet,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,7 +112,7 @@ impl Map {
         armies
             .chain(roads)
             .fold(EnumMap::default(), |totals, blockset| {
-                enum_map! { coalition => totals[coalition] + blockset.blocks[coalition] }
+                enum_map! { coalition => totals[coalition] + blockset.count(coalition) }
             })
     }
 
@@ -126,6 +126,25 @@ impl Map {
                 }
             },
         )
+    }
+
+    /// Clear all blocks off of the map (for instance, after a dominance check)
+    pub fn clear_blocks(&mut self) -> BlockSet {
+        let armies = self
+            .regions
+            .values_mut()
+            .map(|region| region.armies.take_all());
+
+        let roads = self
+            .borders
+            .values_mut()
+            .map(|border| border.roads.take_all());
+
+        armies.chain(roads).sum()
+    }
+
+    pub fn add_armies(&mut self, region: Region, blocks: BlockSet) {
+        self.regions[region].armies.add(blocks);
     }
 }
 

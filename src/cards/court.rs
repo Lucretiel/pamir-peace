@@ -90,8 +90,62 @@ pub enum CardAction {
     Battle,
 }
 
+/// Special abilities that a card can have. These are global passives that
+/// aren't affected by spies on the card.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum SpecialAbility {}
+pub enum SpecialAbility {
+    /// Cards that share a region are adjacent for spy movement
+    StrangeBedfellows,
+
+    /// Don't pay for cards sharing this coalition
+    CoalitionInfluence,
+
+    /// This card is always considered favored
+    SavvyOperator,
+
+    /// This card is always considered favored
+    Irregulars,
+
+    /// Tribes in this region can't be attacked
+    Citadel,
+
+    /// Don't pay bribes when playing cards
+    CharismaticCourtiers,
+
+    /// Spies killed in battle return to this card
+    SafeHouse,
+
+    /// After you take the build action, place one additional block
+    Infrastructure,
+
+    /// Your political cards cannot be betrayed
+    Bodyguards,
+
+    /// Don't pay for cards sharing this region
+    RegionInfluence,
+
+    /// At the start of your turn, place a spy on any card matching this
+    /// region
+    Blackmail,
+
+    /// Your spies cannot be removed in battles with other spies
+    IndispensableAdvisors,
+
+    /// After resolving a dominance check, place two armies in this region
+    Insurrection,
+
+    /// Do not pay bribes when taking hostage actions
+    CivilServiceReforms,
+
+    /// Tax as though you rule every region
+    ClaimOfAncientLineage,
+
+    /// Your armies may move without a road
+    IndianSupplies,
+
+    /// Spies move double distance
+    WellConnected,
+}
 
 #[derive(Debug)]
 pub struct Card {

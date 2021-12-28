@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, mem, ops::Deref};
+use std::{
+    collections::VecDeque,
+    mem,
+    ops::{Deref, Index, IndexMut},
+};
 
 use enum_map::{Enum, EnumMap};
 use itertools::Itertools;
@@ -265,5 +269,47 @@ impl PlayerSet {
 
     pub fn players_mut(&mut self) -> &mut [Player] {
         &mut self.players
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Player> {
+        self.players.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Player> {
+        self.players.iter_mut()
+    }
+}
+
+impl Index<usize> for PlayerSet {
+    type Output = Player;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.players[index]
+    }
+}
+
+impl IndexMut<usize> for PlayerSet {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.players[index]
+    }
+}
+
+impl Index<Color> for PlayerSet {
+    type Output = Player;
+
+    fn index(&self, index: Color) -> &Self::Output {
+        self.players
+            .iter()
+            .find(|player| player.color == index)
+            .expect("no player matching color")
+    }
+}
+
+impl IndexMut<Color> for PlayerSet {
+    fn index_mut(&mut self, index: Color) -> &mut Self::Output {
+        self.players
+            .iter_mut()
+            .find(|player| player.color == index)
+            .expect("no player matching color")
     }
 }

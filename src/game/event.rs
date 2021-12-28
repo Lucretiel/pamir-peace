@@ -1,8 +1,12 @@
 use enum_map::EnumMap;
 
 use crate::{
-    cards::{self, event::DiscardEvent},
+    cards::{
+        self,
+        event::{DiscardEvent, PurchaseEvent},
+    },
     player::Color,
+    rupees::RupeeSet,
 };
 
 use super::Game;
@@ -24,10 +28,7 @@ pub struct MustDiscard {
 impl Game {
     fn apply_discard_event(&mut self, event: DiscardEvent) {
         match event {
-            DiscardEvent::ChangeSuit(suit) => {
-                // Discard the 
-                let _
-            }
+            DiscardEvent::ChangeSuit(suit) => self.try_set_climate(suit),
             DiscardEvent::Riots(_) => todo!(),
             DiscardEvent::DisregardForCustoms => self.effects.disregard_for_customs = true,
             DiscardEvent::NoEffect => {}
@@ -42,6 +43,25 @@ impl Game {
                 self.discard.extend(discarded_prizes)
             }
             DiscardEvent::EmbarrassmentOfRiches => self.effects.embarrassment_of_riches = true,
+        }
+    }
+
+    fn apply_purchase_event(&mut self, event: PurchaseEvent) {
+        let current_player = &mut self.players[self.turn.player];
+
+        match event {
+            PurchaseEvent::KohINoorRecovered => current_player.state.effects.kohinoor = true,
+            PurchaseEvent::Rumor => todo!(),
+            PurchaseEvent::OtherPersuasiveMethods => todo!(),
+            PurchaseEvent::PublicWithdrawal => todo!(),
+            PurchaseEvent::CourtlyManners => current_player.state.effects.courtly_manners = true,
+            PurchaseEvent::NationBuilding => current_player.state.effects.nation_building = true,
+            PurchaseEvent::PashtunwaliValues => todo!(),
+            PurchaseEvent::Nationalism => current_player.state.effects.nationalism = true,
+            PurchaseEvent::ConflictFatigue => self.effects.conflict_fatigue = true,
+            PurchaseEvent::NewTactics => current_player.state.effects.new_tactics = true,
+            PurchaseEvent::Rebuke => todo!(),
+            PurchaseEvent::PersianAristocracy => current_player.state.rupees.add(RupeeSet::new(3)),
         }
     }
 }

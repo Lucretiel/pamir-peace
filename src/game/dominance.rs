@@ -1,9 +1,8 @@
-use std::cmp::Reverse;
+use std::{cmp::Reverse, iter};
 
 use enum_map::{enum_map, EnumMap};
-use itertools::Itertools;
 
-use crate::{player, primitives::Coalition, score};
+use crate::{cards::court::SpecialAbility, player, primitives::Coalition, score};
 
 use super::Game;
 
@@ -12,8 +11,25 @@ struct BlockCount {
     count: i8,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct GameOver {
+    pub winner: player::Color,
+}
+
 impl Game {
-    pub fn resolve_dominance_check(&mut self, doubled: bool) {
+    /// Resolve a dominance check. Run this method *after* discarding any
+    /// dominance cards, as it examines the discard pile to determine if this
+    /// is the final
+    pub fn resolve_dominance_check(&mut self) -> Option<GameOver> {
+        // Is this the final dominance check? If so, it scores double, and the
+        // game is definitely over
+        let dominance_count = self
+            .discard
+            .iter()
+            .filter(|card| card.is_dominance())
+            .count();
+        let final_dominance_check = dominance_count == 4;
+
         // Count blocks on the map
         let block_counts = self.map.total_block_counts();
 
@@ -38,6 +54,9 @@ impl Game {
             // This coalition is dominant. Score for influence
             let dominant_coalition = block_counts[0].coalition;
 
+            // As part of a successful dominance check, all blocks go home
+            self.blocks.add(self.map.clear_blocks());
+
             // Count up player influence
             let influences = self
                 .players
@@ -46,8 +65,15 @@ impl Game {
                 .filter(|player| player.state.loyalty == dominant_coalition)
                 .map(|player| (player.color, player.state.influence(&self.effects)));
 
-            score::compute_block_scores(influences, doubled)
+            score::compute_scores(
+                match final_dominance_check {
+                    false => [5, 3, 1],
+                    true => [10, 6, 2],
+                },
+                influences,
+            )
         } else {
+            // Add up all tribes on the map
             let tribes = self.map.total_tribe_counts();
 
             // Add up all spies across all courts
@@ -62,6 +88,7 @@ impl Game {
                     }
                 });
 
+            // For each player, the number of gifts they've purchased
             let gifts = self
                 .players
                 .iter()
@@ -70,9 +97,16 @@ impl Game {
             let counts =
                 gifts.map(|(player, count)| (player, count + tribes[player] + spies[player]));
 
-            score::compute_cylinder_scores(counts, doubled)
+            score::compute_scores(
+                match final_dominance_check {
+                    false => [3, 1],
+                    true => [6, 2],
+                },
+                counts,
+            )
         };
 
+        // Add scores
         self.players
             .iter_mut()
             .for_each(|player| player.state.score += scores[player.color]);
@@ -81,6 +115,28 @@ impl Game {
         self.effects.clear();
         self.players
             .iter_mut()
-            .for_each(|player| player.state.effects.clear())
+            .for_each(|player| player.state.effects.clear());
+
+        // Resolve insurrections
+        // TODO: if there are no blocks in the supply, the player should take them
+        // from elsewhere
+        self.players
+            .iter()
+            .flat_map(|player| {
+                player
+                    .state
+                    .court
+                    .cards
+                    .iter()
+                    .filter(|card| card.ability == Some(SpecialAbility::Insurrection))
+                    .map(|card| card.region)
+                    .zip(iter::repeat(player.state.loyalty))
+            })
+            .for_each(|(region, coalition)| {
+                let armies = self.blocks.take_up_to(2, coalition);
+                self.map.add_armies(region, armies);
+            });
+
+        None
     }
 }

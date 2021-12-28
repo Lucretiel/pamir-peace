@@ -1,10 +1,6 @@
-use std::{
-    iter::{self, FusedIterator},
-    mem,
-    ops::{Add, AddAssign},
-};
+use std::{cmp::Ordering, iter, mem, ops::AddAssign};
 
-use enum_map::{enum_map, Enum, EnumMap, IntoIter};
+use enum_map::{enum_map, Enum, EnumMap};
 
 /// A set of keys, efficiently implemented with EnumMap
 pub struct EnumSet<K: Enum<bool>> {
@@ -125,3 +121,22 @@ where
     }
 }
 
+/// Check if there is a plurality winner in a list. A plurality winner is the
+/// key which uniquely has a higher count than any other key in the list
+pub fn unique_max_by_key<T, K>(input: impl Iterator<Item = T>, key: impl Fn(&T) -> K) -> Option<T>
+where
+    K: Ord,
+{
+    let mut iter = input.into_iter();
+    let first = iter.next()?;
+
+    let (best, unique) = iter.fold((first, true), |(best, unique), item| {
+        match Ord::cmp(&key(&item), &key(&best)) {
+            Ordering::Less => (best, unique),
+            Ordering::Equal => (best, false),
+            Ordering::Greater => (item, true),
+        }
+    });
+
+    unique.then(|| best)
+}

@@ -7,3 +7,9 @@ pub enum Card {
     Court(court::Card),
     Event(event::Card),
 }
+
+impl Card {
+    pub fn is_dominance(&self) -> bool {
+        matches!(self, Card::Event(event::Card::Dominance))
+    }
+}
